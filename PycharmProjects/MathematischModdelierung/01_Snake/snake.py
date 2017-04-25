@@ -69,7 +69,7 @@ class Snake:
         new_x, new_y = randint(1, self.field_size), randint(1, self.field_size)
         check_element = FieldElement(new_x, new_y)
 
-        while self.check_collision(check_element, 0) == 0:
+        while not self.check_collision(check_element, 0):
             new_x = randint(1, self.field_size)
             new_y = randint(1, self.field_size)
 
@@ -119,7 +119,7 @@ class Snake:
         for i_check_collision in range(start, len(self.snake_list)):
             if field_element.pos_x == self.snake_list[i_check_collision].pos_x and \
                             field_element.pos_y == self.snake_list[i_check_collision].pos_y:
-                return 0
+                return False
             return 1
 
     def check_head_collision(self):
@@ -157,17 +157,18 @@ class Form(qw.QWidget):
         btn_exit = qw.QPushButton("Exit")
         btn_start.setDefault(True)
         btn_start.clicked.connect(lambda: self.clicked_start())
-        le_speed = qw.QLineEdit("500")
-        le_size = qw.QLineEdit("17")
-        le_zoom = qw.QLineEdit("1")
-        le_loop = qw.QLineEdit("0")
-        le_prob = qw.QLineEdit("1")
 
-        form_wrap.addRow(qw.QLabel("Speed"), le_speed)
-        form_wrap.addRow(qw.QLabel("Field size"), le_size)
-        form_wrap.addRow(qw.QLabel("zoom"), le_zoom)
-        form_wrap.addRow(qw.QLabel("Boarder Loop"), le_loop)
-        form_wrap.addRow(qw.QLabel("Fruit Prob"), le_prob)
+        self.le_speed = qw.QLineEdit("500")
+        self.le_size = qw.QLineEdit("17")
+        self.le_zoom = qw.QLineEdit("1")
+        self.le_loop = qw.QLineEdit("0")
+        self.le_prob = qw.QLineEdit("1")
+
+        form_wrap.addRow(qw.QLabel("Speed"), self.le_speed)
+        form_wrap.addRow(qw.QLabel("Field size"), self.le_size)
+        form_wrap.addRow(qw.QLabel("zoom"), self.le_zoom)
+        form_wrap.addRow(qw.QLabel("Boarder Loop"), self.le_loop)
+        form_wrap.addRow(qw.QLabel("Fruit Prob"), self.le_prob)
         form_wrap.addRow(btn_start, btn_exit)
 
         h_box_wrap.addLayout(form_wrap)
@@ -232,7 +233,6 @@ def event_loop():
 def game_over():
     main_window.setWindowTitle("Game Over!")
     timer.stop()
-    Form.enable()
 
 
 def print_pixel(pos_x, pos_y, color):
@@ -242,15 +242,13 @@ def print_pixel(pos_x, pos_y, color):
 
 if __name__ == "__main__":
     # Start QW Application
+    #tset comment
     app = qw.QApplication(sys.argv)
 
-    # Create Standard Game Settings
-    gameSettings = Settings(500, 13, 20, 0, 4)
-
-    # Create Snake Game Object
-    snake = Snake(gameSettings.field_size)
-
-    # print_pixel(snake.snake_list[-1].pos_x, snake.snake_list[-1].pos_y, Color.BACKGROUND)
+    # Create Display Widget to contain
+    display = qw.QLabel()
+    display.resize(500, 500)
+    # display.move(500, 0)
 
     # ----- Window -----
     main_window = qw.QMainWindow()
@@ -261,6 +259,21 @@ if __name__ == "__main__":
     main_window.move(frame_geometry.topLeft())
     main_window.setWindowTitle("Snake - much extreme, much niceness")
 
+    # Assign Event Handler
+    main_window.keyPressEvent = move_event
+
+    widget = Form(main_window)
+    main_window.show()
+
+    # Create Standard Game Settings
+    gameSettings = Settings(widget.le_speed.toInt(), widget.le_size, widget.le_zoom, widget.le_loop, widget.le_prob)
+
+    # Create Snake Game Object
+    snake = Snake(gameSettings.field_size)
+
+    # print_pixel(snake.snake_list[-1].pos_x, snake.snake_list[-1].pos_y, Color.BACKGROUND)
+
+
     timer = qc.QTimer()
     timer.setInterval(int(gameSettings.speed))
     timer.timeout.connect(event_loop)
@@ -269,10 +282,6 @@ if __name__ == "__main__":
     snake_field_img = qg.QImage(gameSettings.field_size, gameSettings.field_size, qg.QImage.Format_RGB32)
     snake_field_img.fill(qc.Qt.black)
 
-    # Create Display Widget to contain
-    display = qw.QLabel()
-    display.resize(500, 500)
-    # display.move(500, 0)
 
     # Draw start Snake Elements on image
     for i in range(0, len(snake.snake_list)):
@@ -282,10 +291,5 @@ if __name__ == "__main__":
     snake_field_img_scaled = snake_field_img.scaled(display.size(), qc.Qt.KeepAspectRatio)
     display.setPixmap(qg.QPixmap.fromImage(snake_field_img_scaled))
 
-    # Assign Event Handler
-    main_window.keyPressEvent = move_event
-
-    widget = Form(main_window)
-    main_window.show()
 
 sys.exit(app.exec_())
