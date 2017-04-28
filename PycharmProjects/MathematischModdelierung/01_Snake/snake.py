@@ -242,7 +242,6 @@ def print_pixel(pos_x, pos_y, color):
 
 if __name__ == "__main__":
     # Start QW Application
-    #tset comment
     app = qw.QApplication(sys.argv)
 
     # Create Display Widget to contain
