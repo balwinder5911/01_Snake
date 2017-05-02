@@ -66,16 +66,15 @@ class Snake:
         del self.snake_list[-1]
 
     def new_fruit(self):
-        new_x, new_y = randint(1, self.field_size), randint(1, self.field_size)
-        check_element = FieldElement(new_x, new_y)
 
-        while not self.check_collision(check_element, 0):
+        # while not self.check_collision(checker_element):
+        while True:
             new_x = randint(1, self.field_size)
             new_y = randint(1, self.field_size)
+            checker_element = FieldElement(new_x, new_y)
 
-            check_element = FieldElement(new_x, new_y)
-
-        return FieldElement(new_x, new_y)
+            if self.check_collision(checker_element):
+                return FieldElement(new_x, new_y)
 
     def move(self):
         # prevent snake running into itself!
@@ -94,33 +93,33 @@ class Snake:
         if self.direction == Directions.UP:
             self.head = FieldElement(self.head.pos_x - 1, self.head.pos_y)
             if self.check_boarder_collision() == 0 or self.check_head_collision() == 0:
-                return 0
+                return False
             self.current_direction = Directions.UP
         else:
             if self.direction == Directions.RIGHT:
                 self.head = FieldElement(self.head.pos_x, self.head.pos_y + 1)
                 if self.check_boarder_collision() == 0 or self.check_head_collision() == 0:
-                    return 0
+                    return False
                 self.current_direction = Directions.RIGHT
             else:
                 if self.direction == Directions.DOWN:
                     self.head = FieldElement(self.head.pos_x + 1, self.head.pos_y)
                     if self.check_boarder_collision() == 0 or self.check_head_collision() == 0:
-                        return 0
+                        return False
                     self.current_direction = Directions.DOWN
                 else:
                     if self.direction == Directions.LEFT:
                         self.head = FieldElement(self.head.pos_x, self.head.pos_y - 1)
                         if self.check_boarder_collision() == 0 or self.check_head_collision() == 0:
-                            return 0
+                            return False
                         self.current_direction = Directions.LEFT
 
-    def check_collision(self, field_element, start):
-        for i_check_collision in range(start, len(self.snake_list)):
+    def check_collision(self, field_element):
+        for i_check_collision in range(0, len(self.snake_list)):
             if field_element.pos_x == self.snake_list[i_check_collision].pos_x and \
                             field_element.pos_y == self.snake_list[i_check_collision].pos_y:
                 return False
-            return 1
+            return True
 
     def check_head_collision(self):
         for i_check_collision in range(0, len(self.snake_list)):
@@ -153,8 +152,7 @@ def clicked_start():
     display.resize(int(gameSettings.zoom), int(gameSettings.zoom))
 
     # Start Timer
-    timer.setInterval(gameSettings.speed)
-    timer.start(500)
+    timer.start(int(gameSettings.speed))
 
     # Set focus to game
     display.setFocus()
@@ -179,7 +177,7 @@ class Form(qw.QWidget):
         btn_start.clicked.connect(lambda: clicked_start())
         btn_exit.clicked.connect(lambda: clicked_exit())
 
-        self.le_speed = qw.QLineEdit("500")
+        self.le_speed = qw.QLineEdit("250")
         self.le_size = qw.QLineEdit("17")
         self.le_zoom = qw.QLineEdit("500")
         self.le_loop = qw.QLineEdit("0")
@@ -241,11 +239,14 @@ def event_loop():
         gameSettings.score += 1
         form.le_score.setText(str(gameSettings.score))
 
+        timer.setInterval(int(timer.interval() * .97))
+        print(timer.interval())
+
         # spawn new/next fruit
         snake.fruit_list[0] = snake.new_fruit()
         snake.spawn_fruit()
     else:
-        if checker != 0:
+        if not checker:
             snake.swap_list()
 
     snake_field_img_scaled_def = snake_field_img.scaled(display.size(), qc.Qt.KeepAspectRatio)
