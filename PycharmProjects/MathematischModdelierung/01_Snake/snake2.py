@@ -4,7 +4,6 @@ from PyQt5 import QtCore as qc
 from PyQt5 import QtWidgets as qw
 from PyQt5 import QtGui as qg
 from random import randint
-
 from PyQt5.QtWidgets import QDesktopWidget
 
 
@@ -22,7 +21,7 @@ class Color(enum.IntEnum):
     BACKGROUND = 0xff000000
 
 
-class Settings:
+class Game:
     def __init__(self, speed, field_size, zoom, boarder_loop, fruit_prob):
         self.speed = speed
         self.field_size = field_size
@@ -30,6 +29,7 @@ class Settings:
         self.boarder_loop = boarder_loop
         self.fruit_prob = fruit_prob
         self.first_spawn = 0
+        self.score = 0
 
 
 class FieldElement:
@@ -141,50 +141,68 @@ class Snake:
             return 0
 
 
-class Form(qw.QWidget):
+def clicked_start():
 
+    gameSettings.field_size = int(form.le_size.text())
+    gameSettings.zoom = int(form.le_zoom.text())
+    gameSettings.boarder_loop = int(form.le_loop.text())
+    gameSettings.fruit_prob = int(form.le_prob.text())
+    gameSettings.speed = int(form.le_speed.text())
+
+    # Apply zoom
+    display.resize(int(gameSettings.zoom), int(gameSettings.zoom))
+
+    # Start Timer
+    timer.setInterval(gameSettings.speed)
+    timer.start(500)
+
+    # Set focus to game
+    display.setFocus()
+
+
+def clicked_exit():
+    exit()
+
+
+class Form(qw.QWidget):
     def __init__(self, parent=None):
         super(Form, self).__init__(parent)
-
         main_widget = qw.QWidget(main_window)
-        main_widget.resize(1000, 500)
+        main_widget.resize(500, 500)
 
         # Layouts
-        h_box_wrap = qw.QHBoxLayout()
         form_wrap = qw.QFormLayout()
 
         btn_start = qw.QPushButton("Start")
         btn_exit = qw.QPushButton("Exit")
         btn_start.setDefault(True)
-        btn_start.clicked.connect(lambda: self.clicked_start())
+        btn_start.clicked.connect(lambda: clicked_start())
+        btn_exit.clicked.connect(lambda: clicked_exit())
 
         self.le_speed = qw.QLineEdit("500")
         self.le_size = qw.QLineEdit("17")
-        self.le_zoom = qw.QLineEdit("1")
+        self.le_zoom = qw.QLineEdit("500")
         self.le_loop = qw.QLineEdit("0")
-        self.le_prob = qw.QLineEdit("1")
+        self.le_prob = qw.QLineEdit("0")
+        self.le_score = qw.QLabel("0")
 
         form_wrap.addRow(qw.QLabel("Speed"), self.le_speed)
         form_wrap.addRow(qw.QLabel("Field size"), self.le_size)
         form_wrap.addRow(qw.QLabel("zoom"), self.le_zoom)
-        form_wrap.addRow(qw.QLabel("Boarder Loop"), self.le_loop)
-        form_wrap.addRow(qw.QLabel("Fruit Prob"), self.le_prob)
+        form_wrap.addRow(qw.QLabel("Boarder Loop tbd"), self.le_loop)
+        form_wrap.addRow(qw.QLabel("Fruit Prob tbd"), self.le_prob)
+        form_wrap.addRow(qw.QLabel("Score"), self.le_score)
         form_wrap.addRow(btn_start, btn_exit)
 
-        h_box_wrap.addLayout(form_wrap)
-        # h_box_wrap.addStretch()
-        h_box_wrap.addWidget(display)
+        main_widget.setLayout(form_wrap)
 
-        main_widget.setLayout(h_box_wrap)
-
-    def clicked_start(self):
-        # Timer
-        timer.start(500)
-        display.setFocus()
 
 # ----- main function ----
+
 #
+
 # Snake logic and functions
+
 
 def move_event(e):
     if e.key() == qc.Qt.Key_Up and not snake.direction == Directions.DOWN:
@@ -198,12 +216,12 @@ def move_event(e):
 
 
 def event_loop():
-
     # TEST: Show Snake Elements
     # for test_i in range(0, len(snake.snake_list)):
     #     print("Snake Element ", test_i+1, ": ", snake.snake_list[test_i].pos_x, snake.snake_list[test_i].pos_y)
 
     # check first fruit spawn
+
     if len(snake.snake_list) == 3 and gameSettings.first_spawn < 1:
         snake.spawn_fruit()
         gameSettings.first_spawn = 1
@@ -218,6 +236,10 @@ def event_loop():
         snake.snake_list.insert(0, snake.fruit_list[0])
         snake.head = snake.fruit_list[0]
         print_pixel(snake.head.pos_x, snake.head.pos_y, Color.SNAKE)
+
+        # increase score
+        gameSettings.score += 1
+        form.le_score.setText(str(gameSettings.score))
 
         # spawn new/next fruit
         snake.fruit_list[0] = snake.new_fruit()
@@ -242,12 +264,8 @@ def print_pixel(pos_x, pos_y, color):
 
 if __name__ == "__main__":
     # Start QW Application
+    # Test comment
     app = qw.QApplication(sys.argv)
-
-    # Create Display Widget to contain
-    display = qw.QLabel()
-    display.resize(500, 500)
-    # display.move(500, 0)
 
     # ----- Window -----
     main_window = qw.QMainWindow()
@@ -258,20 +276,25 @@ if __name__ == "__main__":
     main_window.move(frame_geometry.topLeft())
     main_window.setWindowTitle("Snake - much extreme, much niceness")
 
+    # Create Display Widget to contain
+    display = qw.QLabel(main_window)
+    display.resize(500, 500)
+    display.move(500, 0)
+
     # Assign Event Handler
     main_window.keyPressEvent = move_event
 
-    widget = Form(main_window)
+    form = Form(main_window)
     main_window.show()
 
     # Create Standard Game Settings
-    gameSettings = Settings(int(widget.le_speed.text()), int(widget.le_size.text()), int(widget.le_zoom.text()), int(widget.le_loop.text()), int(widget.le_prob.text()))
+    gameSettings = Game(int(form.le_speed.text()), int(form.le_size.text()), int(form.le_zoom.text()), \
+                        int(form.le_loop.text()), int(form.le_prob.text()))
 
     # Create Snake Game Object
     snake = Snake(gameSettings.field_size)
 
     # print_pixel(snake.snake_list[-1].pos_x, snake.snake_list[-1].pos_y, Color.BACKGROUND)
-
     timer = qc.QTimer()
     timer.setInterval(int(gameSettings.speed))
     timer.timeout.connect(event_loop)
